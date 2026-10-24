@@ -121,7 +121,7 @@ Tell the user before running. This is the first sign-in from the cloud.
 - Reach the signed-in state by the same route the user takes: `https://sweatandtonic.com/account/login`, then the LOG IN button, then the Mariana Tek login page, then sign in, then return to `/pages/reserve`.
 
 - [x] **Step 1:** Run `node skills/gym-booking/book.js --dry-run --no-wait --week 2026-10-26 --out "$RUN" --plan "$RUN/empty-plan.json"`, where the plan has no days. The script signs in, fetches the week signed in, and writes `results.json` with `stopped:null` and `days:[]`, plus `signed-in.png`.
-- [ ] **Step 2: Verify** that the user's known bookings (5 classes, Oct 26–30) come back with `reserved:true` in the week data (log a count only), and that no verification check was hit. If one was, stop and report to the user.
+- [x] **Step 2: Verify** that the user's known bookings (5 classes, Oct 26–30) come back with `reserved:true` in the week data (log a count only), and that no verification check was hit. If one was, stop and report to the user.
 - [ ] **Step 3: Commit** `git commit -am "Add read-only sign-in and signed-in data reads"`
 
 ### Task 5: Walk to the confirm screen (dry run) and wait for opening
@@ -136,10 +136,10 @@ Tell the user before running. This is the first sign-in from the cloud.
 - Waiting (skipped with `--no-wait`): sleep until `msUntil(bookingStart)` of the first matched class. Then, for classes still "Not Open", re-fetch every 3s for at most 120s (care rules).
 - Any `StopError` sets `stopped` and ends the run, but `results.json` is still written (use `try/finally`).
 
-- [ ] **Step 1:** Show the user a one-day plan for an already-open class in week `2026-10-26` or `2026-11-02`, then run it with `--dry-run --no-wait`. Confirm one `would-book` entry and that the screenshot shows the right class, spot and Unlimited.
-- [ ] **Step 2:** Run a read-only check against a not-yet-open week (`--week 2026-11-09 --list-classes`, plus one class detail fetch). Confirm `status === 'Not Open'` and `bookingStart === '2026-10-31T17:00:00-04:00'`.
-- [ ] **Step 3:** In the user's account (via a signed-in read), confirm no new bookings appeared.
-- [ ] **Step 4: Commit** `git commit -am "Add dry-run booking walk-through and opening wait"`
+- [x] **Step 1:** Show the user a one-day plan for an already-open class in week `2026-10-26` or `2026-11-02`, then run it with `--dry-run --no-wait`. Confirm one `would-book` entry and that the screenshot shows the right class, spot and Unlimited.
+- [x] **Step 2:** Run a read-only check against a not-yet-open week (`--week 2026-11-09 --list-classes`, plus one class detail fetch). Confirm `status === 'Not Open'` and `bookingStart === '2026-10-31T17:00:00-04:00'`.
+- [x] **Step 3:** In the user's account (via a signed-in read), confirm no new bookings appeared.
+- [x] **Step 4: Commit** `git commit -am "Add dry-run booking walk-through and opening wait"`
 
 ### Task 6: Skill instructions for the weekly run
 

@@ -11,7 +11,7 @@
 
 const fs = require('node:fs');
 const path = require('node:path');
-const { targetWeek, normalizeClass, classListRows, addDays } = require('./plan');
+const { targetWeek, normalizeClass, classListRows, addDays, matchClass, ruleViolation, pickSpot, msUntil } = require('./plan');
 
 const DATA_HOST = 'https://sweatandtonic.marianatek.com';
 const ACCOUNT_URL = 'https://sweatandtonic.com/account/login';
@@ -173,6 +173,121 @@ async function signedInGetJson(page) {
   };
 }
 
+// ---- Dry-run walk to the confirm screen ----
+
+const FORBIDDEN = /reserv|complete|cancel|wait ?list|buy|purchase|pay|checkout|confirm/i;
+const OPEN_RECHECK_MS = 3000;
+const OPEN_RECHECK_FOR_MS = 120000;
+const ORDINAL = ['', '1st', '2nd', '3rd'];
+
+// The only click this script makes on a booking screen. Refuses anything that could book, pay or cancel.
+async function safeClick(locator) {
+  const label = `${await locator.getAttribute('aria-label').catch(() => '') || ''} ${await locator.textContent().catch(() => '') || ''}`;
+  if (FORBIDDEN.test(label)) throw new StopError(`refused to click "${label.trim().slice(0, 40)}"`);
+  await locator.click({ timeout: 15000 });
+}
+
+// Re-fetch one class. If it is still "Not Open" after its opening time, recheck every few seconds
+// for up to 2 minutes (care rules), then give up on it.
+async function freshClass(id, getJson, noWait) {
+  let det = await getJson(`${DATA_HOST}/api/customer/v1/classes/${id}`);
+  let cls = normalizeClass(det);
+  if (cls.status === 'Not Open' && !noWait && msUntil(cls.bookingStart, new Date()) === 0) {
+    const end = Date.now() + OPEN_RECHECK_FOR_MS;
+    while (cls.status === 'Not Open' && Date.now() < end) {
+      await sleep(OPEN_RECHECK_MS);
+      det = await getJson(`${DATA_HOST}/api/customer/v1/classes/${id}`);
+      cls = normalizeClass(det);
+    }
+  }
+  return { cls, layoutSpots: (det.layout && det.layout.spots) || [] };
+}
+
+// Opens the class's "Select Your Spot" screen, clicks the spot, and waits for "Confirm Your Reservation".
+// Checks the screen, saves a screenshot, then navigates away. Nothing on the confirm screen is clicked.
+async function walkToConfirm(page, cls, spot, shotPath) {
+  await page.goto(`${RESERVE_URL}?_mt=${encodeURIComponent(`/classes/${cls.id}/reserve`)}`,
+    { waitUntil: 'domcontentloaded', timeout: 60000 });
+  const widget = await waitForWidget(page, `/classes/${cls.id}`);
+  await checkForBlock(page);
+  if (spot) {
+    const want = spot.replace(/\s+/g, '');
+    const spots = widget.locator('svg[role="button"]');
+    await spots.first().waitFor({ timeout: 30000 });
+    const names = await spots.evaluateAll((els) => els.map((e) => (e.textContent || '').replace(/\s+/g, '')));
+    const i = names.indexOf(want);
+    if (i < 0) return { ok: false, note: `spot ${spot} not on the map` };
+    await safeClick(spots.nth(i));
+  }
+  const confirm = await widget.getByText(/confirm your reservation/i).first()
+    .waitFor({ timeout: 20000 }).then(() => true, () => false);
+  await checkForBlock(page);
+  const frameEl = await widget.frameElement();
+  await frameEl.screenshot({ path: shotPath }).catch(() => page.screenshot({ path: shotPath }));
+  if (!confirm) return { ok: false, note: 'confirm screen did not appear' };
+  const text = (await widget.evaluate(() => document.body.innerText)).replace(/\s+/g, ' ');
+  const problems = [];
+  if (!text.toLowerCase().includes(cls.typeName.toLowerCase()) && !text.toLowerCase().includes(cls.name.toLowerCase())) problems.push('class name');
+  if (!text.includes(cls.time)) problems.push('time');
+  if (spot && !new RegExp(`(^|\\D)${spot.replace(/[^\w]/g, '.?')}(\\D|$)`).test(text)) problems.push('spot');
+  // "Pay With" is a custom dropdown (role=combobox owning #paymentOption). Its chosen value is held in a
+  // read-only input, not in the page text; the chosen option is also marked aria-selected.
+  const payWith = await widget.evaluate(() => {
+    const shown = document.querySelector('[role=combobox][aria-owns=paymentOption] input[readonly]');
+    const picked = document.querySelector('#paymentOption [aria-selected=true]');
+    return (shown && shown.value) || (picked && picked.textContent) || '';
+  });
+  if (!/unlimited/i.test(payWith)) {
+    problems.push('Pay With is not Unlimited');
+    const html = await widget.evaluate(() => document.body.outerHTML.replace(/<path[^>]*>/g, ''));
+    fs.writeFileSync(shotPath.replace(/\.png$/, '-page.html'), html);
+  }
+  await page.goto('about:blank');
+  if (problems.length) return { ok: false, note: `confirm screen looks wrong: ${problems.join(', ')}` };
+  return { ok: true, payWith: payWith.trim().slice(0, 80) };
+}
+
+async function bookDays(page, plan, week, weekClasses, getJson, opts, results) {
+  const bookedThisRun = [];
+  if (!opts.noWait) {
+    const opens = plan.days.flatMap((d) => d.choices.map((ch) => matchClass(ch, d.date, weekClasses).cls))
+      .filter(Boolean).map((c) => c.bookingStart).sort((a, b) => Date.parse(a) - Date.parse(b));
+    if (opens.length && msUntil(opens[0], new Date()) > 0) {
+      console.log(`waiting ${Math.round(msUntil(opens[0], new Date()) / 1000)}s for booking to open`);
+      await sleep(msUntil(opens[0], new Date()));
+    }
+  }
+  for (const day of plan.days) {
+    const entry = { day: day.day, date: day.date, outcome: 'could-not-book', choice: null, classId: null,
+      typeName: null, time: null, studio: null, spot: null, notes: [], screenshot: null };
+    results.days.push(entry);
+    for (const ch of day.choices) {
+      const tag = `${ORDINAL[ch.choice] || ch.choice}: ${ch.typeName} ${ch.time}`;
+      const m = matchClass(ch, day.date, weekClasses);
+      if (!m.cls) { entry.notes.push(`${tag} — ${m.reason}`); continue; }
+      const { cls, layoutSpots } = await freshClass(m.cls.id, getJson, opts.noWait);
+      const rule = ruleViolation(cls, { week, bookedThisRun, weekClasses });
+      if (rule) { entry.notes.push(`${tag} — ${rule}`); continue; }
+      if (cls.status) { entry.notes.push(`${tag} — ${cls.status}`); continue; }
+      if (cls.availableSpots === 0) { entry.notes.push(`${tag} — class full`); continue; }
+      let spot = null;
+      if (cls.layout === 'pick-a-spot') {
+        spot = pickSpot(ch.spots, layoutSpots);
+        if (!spot) { entry.notes.push(`${tag} — none of ${ch.spots.join(', ')} free`); continue; }
+      }
+      const shot = path.join(opts.out, `confirm-${day.day}-${ch.choice}.png`);
+      const walk = await walkToConfirm(page, cls, spot, shot);
+      if (!walk.ok) { entry.notes.push(`${tag} — ${walk.note}`); entry.screenshot = shot; continue; }
+      Object.assign(entry, { outcome: 'would-book', choice: ch.choice, classId: cls.id, typeName: cls.typeName,
+        time: cls.time, studio: cls.studioName, spot, screenshot: shot });
+      entry.notes.push(`${tag} — would book${spot ? ` spot ${spot}` : ''}, paying with ${walk.payWith}`);
+      bookedThisRun.push(cls);
+      break;
+    }
+    console.log(`${day.day} ${day.date}: ${entry.outcome}${entry.spot ? ` (spot ${entry.spot})` : ''}`);
+  }
+}
+
 async function runDry(opts) {
   const plan = JSON.parse(fs.readFileSync(opts.plan, 'utf8'));
   const monday = opts.week || (plan.week && plan.week.monday) || targetWeek(new Date()).monday;
@@ -190,7 +305,10 @@ async function runDry(opts) {
     const weekClasses = await fetchWeek(monday, getJson);
     const count = (k) => weekClasses.filter((c) => c[k]).length;
     console.log(`signed-in week ${monday}: ${weekClasses.length} classes, ${count('reserved')} reserved, ${count('waitlisted')} waitlisted`);
-    // Booking walk-through for plan.days is added in Task 5.
+    for (const c of weekClasses.filter((x) => x.reserved || x.waitlisted)) {
+      console.log(`  you hold: ${c.weekday} ${c.date} ${c.time} ${c.typeName} (${c.studioName})${c.waitlisted ? ' [waitlist]' : ''}`);
+    }
+    await bookDays(page, plan, results.week, weekClasses, getJson, opts, results);
   } catch (e) {
     results.stopped = e instanceof StopError ? e.message : `script error: ${e.message}`;
   } finally {
