@@ -104,7 +104,7 @@ This needs the user: they create a blank Google Sheet and paste its link. Use th
 
 - [x] **Step 1:** Ask the user for the blank Sheet's link. Write all three tabs and the formatting in one `update_spreadsheet` batch, then the values and formulas.
 - [x] **Step 2: Verify.** Read `Booking List!A1:H22` with `get_values`. Confirm 21 rows, all `On` FALSE. Then temporarily fill `My Plan` Wed with Book? ticked, 1st choice `6:10 AM · Top HIIT · The Well`, Spots `4-W`. Re-read and confirm `Wed | 1 | TRUE | 6:10 AM | Top HIIT | The Well | 48750 | 4-W`. Clear the test entry.
-- [ ] **Step 3:** Ask the user to open the Sheet in the Google Sheets app and fill in their real choices. Confirm the dropdowns and tick boxes work on their phone.
+- [x] **Step 3:** Ask the user to open the Sheet in the Google Sheets app and fill in their real choices. Confirm the dropdowns and tick boxes work on their phone.
 - [x] **Step 4: Commit** `git add skills/gym-booking/SKILL.md && git commit -m "Record preferences Sheet and its setup steps"`
 
 ### Task 4: Sign in and read the week as the user (read-only)
@@ -122,7 +122,7 @@ Tell the user before running. This is the first sign-in from the cloud.
 
 - [x] **Step 1:** Run `node skills/gym-booking/book.js --dry-run --no-wait --week 2026-10-26 --out "$RUN" --plan "$RUN/empty-plan.json"`, where the plan has no days. The script signs in, fetches the week signed in, and writes `results.json` with `stopped:null` and `days:[]`, plus `signed-in.png`.
 - [x] **Step 2: Verify** that the user's known bookings (5 classes, Oct 26–30) come back with `reserved:true` in the week data (log a count only), and that no verification check was hit. If one was, stop and report to the user.
-- [ ] **Step 3: Commit** `git commit -am "Add read-only sign-in and signed-in data reads"`
+- [x] **Step 3: Commit** `git commit -am "Add read-only sign-in and signed-in data reads"`
 
 ### Task 5: Walk to the confirm screen (dry run) and wait for opening
 
@@ -154,8 +154,8 @@ Steps the instructions must state, in order:
 5. Run `--list-classes` for the target week and rewrite `Class List`.
 6. Never put the login, cookies or tokens in the email, the Sheet or the repo.
 
-- [ ] **Step 1:** Write the instructions.
-- [ ] **Step 2: Commit** `git commit -am "Write weekly run instructions for gym-booking skill"`
+- [x] **Step 1:** Write the instructions.
+- [x] **Step 2: Commit** `git commit -am "Write weekly run instructions for gym-booking skill"`
 
 ### Task 7: First dry run (spec testing step 1)
 

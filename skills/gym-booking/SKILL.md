@@ -5,8 +5,66 @@ description: Use when the user wants to book gym classes at Sweat and Tonic, or 
 
 # Gym class booking
 
-Status: being built (dry run first). Requirements: docs/requirements/gym-booking.md.
-Design: docs/superpowers/specs/2026-10-24-gym-booking-design.md.
+Status: dry run only. The script walks each class to "Confirm Your Reservation" and books nothing.
+Requirements: docs/requirements/gym-booking.md. Design: docs/superpowers/specs/2026-10-24-gym-booking-design.md.
+
+## Goal
+
+Every Saturday at 5:00pm Toronto time, take the user's choices from the preferences Sheet, find
+each chosen class in the week that has just opened, get as far as the confirm screen (dry run), and
+email the user a summary. Then refresh the Class List so the dropdowns show the new week.
+
+## Inputs needed from the user
+
+None at run time. The user keeps their choices in the Sheet's `My Plan` tab (see Settings).
+For a test run, the user may name a week (`--week`, a Monday) that is already open.
+
+## Steps
+
+Make a run folder outside the repo, for example `RUN=$(mktemp -d)`. Every file below goes there.
+Never write run files, screenshots, cookies or tokens into the repo.
+
+1. **Read the Sheet** with the Google Sheets connector (`get_values`):
+   - `'My Plan'!C1`: the pause box. `TRUE` means paused.
+   - `'Booking List'!A1:H22`: the header plus 21 rows. Values come back as text, and empty cells at
+     the end of a row are left off. That's expected, and `buildPlan` handles it.
+   If the Sheet can't be read, book nothing, email the reason (step 4) and stop.
+2. **Write the plan.** Save the Booking List values as `$RUN/rows.json` (the 2D array exactly as
+   returned), then run:
+   `node -e 'const p=require("./skills/gym-booking/plan"); const w=process.argv[2]?{monday:process.argv[2],sunday:p.addDays(process.argv[2],6)}:p.targetWeek(new Date()); require("fs").writeFileSync(process.env.RUN+"/plan.json", JSON.stringify(p.buildPlan(require(process.env.RUN+"/rows.json"), process.argv[1]==="TRUE", w), null, 1))' <pause value> [<Monday for a test week>]`
+   If paused, email "Paused this week. Nothing booked." (subject as in step 4) and stop.
+   If the plan has no days, email "Nothing ticked this week. Nothing booked." and go to step 5.
+3. **Run the script:**
+   `node skills/gym-booking/book.js --dry-run --plan "$RUN/plan.json" --out "$RUN"`
+   - It signs in once with `GYM_EMAIL` / `GYM_PASSWORD`. Never print, log or screenshot these.
+   - On a Saturday run it waits until 5:00pm, then works through the days. Add `--no-wait` (and
+     `--week <Monday>`) only for a test against a week that is already open.
+   - It stops on any "verify you're human" check. Never try to get past one.
+   - It never clicks Complete Reservation, Cancel, Join Waitlist or anything that buys or pays.
+4. **Email the summary** with the Gmail connector (`send_message`) to treichelc@gmail.com.
+   - Subject: `Gym booking (DRY RUN) — week of <Mon date, e.g. Nov 2>`. Leave out "(DRY RUN)" only once
+     live booking exists.
+   - Body: one line per day from `$RUN/results.json`, in plain words:
+     `would book` (class, time, studio, spot), `used a backup` (when `choice` > 1), or
+     `couldn't book`. Under each day, list its `notes`. If `stopped` is set, start the email with
+     "Stopped early: <reason>". If `results.json` is missing, say the script crashed and the user
+     should check the app.
+   - Mention the screenshots exist (they stay in the run folder; attach none).
+5. **Refresh the Class List** for the target week (see "Refreshing the Class List" below).
+6. Never put the login, cookies or tokens in the email, the Sheet or the repo.
+
+## Secrets / connectors required
+
+- Environment secrets `GYM_EMAIL` and `GYM_PASSWORD` (check only that they are set).
+- Google Sheets connector (read the Sheet, rewrite Class List). Gmail connector (send the summary).
+- Network allowlist: `sweatandtonic.com`, `*.marianatek.com`, `*.marianaiframes.com`.
+- Playwright with Chromium (pre-installed in the cloud environment).
+
+## Done when
+
+- The summary email has arrived, with one line per ticked day (or the paused / nothing-ticked note).
+- `results.json` shows `stopped: null`, or the email explains why it stopped.
+- The Class List shows the newly opened week.
 
 ## Settings
 
