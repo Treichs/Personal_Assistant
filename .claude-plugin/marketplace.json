@@ -1,0 +1,11 @@
+{
+  "name": "personal-assistant-marketplace",
+  "owner": { "name": "treichs" },
+  "plugins": [
+    {
+      "name": "personal-assistant",
+      "source": "./",
+      "description": "Personal assistant skills: onboarding new skills, gym class booking."
+    }
+  ]
+}
