@@ -1,4 +1,4 @@
-# Gym-booking requirements (DRAFT, awaiting approval)
+# Gym-booking requirements (APPROVED by user; open items below)
 
 ## Purpose
 Every week, automatically book the user's preferred classes (and spots) at Sweat and Tonic the moment booking opens, and email a summary.
@@ -31,9 +31,14 @@ Every week, automatically book the user's preferred classes (and spots) at Sweat
 2. One live test the user approves.
 3. Confirm the scheduled task fires on time.
 
+## Decisions
+- Membership is unlimited, so booking costs nothing extra. Late-cancel fee applies if cancelled within 12 hours of class start: the skill must never cancel or double-book, and must warn if a booking would need cancelling inside that window.
+- Summary email goes to treichelc@gmail.com via Gmail.
+- Preferences live in a Google Sheet (one row per class, with fallback columns).
+- Spot selection details to be worked out together during the dry run.
+
 ## Open questions
 - Booking platform and whether it blocks automated logins (CAPTCHA/verification).
-- Does the gym have a waitlist or cancellation window we should respect?
-- Does a booking cost credits or a late-cancel fee?
-- Sheet vs Doc, and a Google connector for reading it in the cloud.
-- Which email address receives the summary.
+- Waitlist behaviour.
+- Google Sheets access from the cloud run (connector needed).
+- Add gym domains to the cloud network allowlist and gym login to environment secrets (user action).
