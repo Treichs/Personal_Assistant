@@ -38,7 +38,7 @@ Every week, automatically book the user's preferred classes (and spots) at Sweat
 - Spot selection details to be worked out together during the dry run.
 
 ## Open questions
-- Booking platform and whether it blocks automated logins (CAPTCHA/verification).
+- Booking platform is Mariana Tek (https://sweatandtonic.marianatek.com, linked from the gym's website). Still to confirm: whether its login blocks automated logins (CAPTCHA/verification). Its domain (*.marianatek.com) must be on the cloud network allowlist.
 - Waitlist behaviour.
 - Google Sheets access from the cloud run (connector needed).
 - Add gym domains to the cloud network allowlist and gym login to environment secrets (user action).
