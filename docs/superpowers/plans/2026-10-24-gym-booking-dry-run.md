@@ -120,7 +120,7 @@ Tell the user before running. This is the first sign-in from the cloud.
   - Also `checkForBlock(page) -> void`, which throws `StopError('verification check')` if any frame shows reCAPTCHA challenge or hCaptcha iframes, or text matching `/verify you are human|are you a robot|unusual activity/i`. Called after every navigation.
 - Reach the signed-in state by the same route the user takes: `https://sweatandtonic.com/account/login`, then the LOG IN button, then the Mariana Tek login page, then sign in, then return to `/pages/reserve`.
 
-- [ ] **Step 1:** Run `node skills/gym-booking/book.js --dry-run --no-wait --week 2026-10-26 --out "$RUN" --plan "$RUN/empty-plan.json"`, where the plan has no days. The script signs in, fetches the week signed in, and writes `results.json` with `stopped:null` and `days:[]`, plus `signed-in.png`.
+- [x] **Step 1:** Run `node skills/gym-booking/book.js --dry-run --no-wait --week 2026-10-26 --out "$RUN" --plan "$RUN/empty-plan.json"`, where the plan has no days. The script signs in, fetches the week signed in, and writes `results.json` with `stopped:null` and `days:[]`, plus `signed-in.png`.
 - [ ] **Step 2: Verify** that the user's known bookings (5 classes, Oct 26–30) come back with `reserved:true` in the week data (log a count only), and that no verification check was hit. If one was, stop and report to the user.
 - [ ] **Step 3: Commit** `git commit -am "Add read-only sign-in and signed-in data reads"`
 
