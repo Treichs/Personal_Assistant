@@ -55,7 +55,7 @@
 - `pickSpot(spots: string[], layoutSpots: { name, is_available }[]) -> string | null`: the first listed spot that is available, matched ignoring capitals. `any` means the first available spot in layout order. Returns `null` if none.
 - `msUntil(isoOpen: string, now: Date) -> number`: milliseconds until the opening time, never below 0.
 
-- [ ] **Step 1: Write the failing tests** in `plan.test.js` (`node:test` plus `assert`), using small hand-made API objects:
+- [x] **Step 1: Write the failing tests** in `plan.test.js` (`node:test` plus `assert`), using small hand-made API objects:
   - `targetWeek(new Date('2026-10-24T16:00:00Z'))` gives `{monday:'2026-11-02', sunday:'2026-11-08'}`. `2026-10-25T01:30:00Z` (Sat 9:30pm Toronto) gives the same. `2026-10-31T21:00:00Z` gives `2026-11-09..2026-11-15`. `2026-10-29T12:00:00Z` (Thu) gives `2026-11-09..15`.
   - `formatTime('06:10:00') === '6:10 AM'`, `formatTime('12:00:00') === '12:00 PM'`, `formatTime('18:30:00') === '6:30 PM'`.
   - `normalizeClass` on a sample with `start_date:'2026-11-04'`, `start_time:'06:10:00'`, `start_datetime:'2026-11-04T11:10:00Z'` and `class_type.duration:45` gives `endMs - startMs === 45*60000`, `weekday === 'Wed'` and `time === '6:10 AM'`.
@@ -66,10 +66,10 @@
   - `ruleViolation` gives `'already booked'` for `reserved:true`, `'overlaps Lift HIIT 7:10 AM'` against a reserved 7:10 class when a 6:40 class runs 45 min, `'outside target week'` for a date before `week.monday`, and `null` for a clean class.
   - `pickSpot(['4-W','5-W'], [{name:'4-W',is_available:false},{name:'5-W',is_available:true}]) === '5-W'`, `pickSpot(['4-W'], [{name:'4-W',is_available:false},{name:'9-F',is_available:true}]) === null`, and `pickSpot(['any'], …) === '9-F'`.
   - `msUntil('2026-10-31T17:00:00-04:00', new Date('2026-10-31T20:59:00Z')) === 60000`, and it returns 0 once past.
-- [ ] **Step 2: Run** `node --test skills/gym-booking/` and confirm it fails with `Cannot find module './plan'`.
-- [ ] **Step 3: Implement `plan.js`.** Get Toronto dates with `Intl.DateTimeFormat('en-CA',{timeZone:'America/Toronto',year:'numeric',month:'2-digit',day:'2-digit',weekday:'short'})`. Do date arithmetic on `YYYY-MM-DD` strings through `Date.UTC`, never with local offsets.
-- [ ] **Step 4: Run** `node --test skills/gym-booking/` and confirm all tests pass.
-- [ ] **Step 5: Commit** `git add skills/gym-booking/plan.js skills/gym-booking/plan.test.js && git commit -m "Add gym-booking decision logic with tests"`
+- [x] **Step 2: Run** `node --test skills/gym-booking/*.test.js` (Node 22 does not accept a bare folder) and confirm it fails with `Cannot find module './plan'`.
+- [x] **Step 3: Implement `plan.js`.** Get Toronto dates with `Intl.DateTimeFormat('en-CA',{timeZone:'America/Toronto',year:'numeric',month:'2-digit',day:'2-digit',weekday:'short'})`. Do date arithmetic on `YYYY-MM-DD` strings through `Date.UTC`, never with local offsets.
+- [x] **Step 4: Run** `node --test skills/gym-booking/*.test.js` (Node 22 does not accept a bare folder) and confirm all tests pass.
+- [x] **Step 5: Commit** `git add skills/gym-booking/plan.js skills/gym-booking/plan.test.js && git commit -m "Add gym-booking decision logic with tests"`
 
 ### Task 2: Public class list (`book.js --list-classes`)
 
