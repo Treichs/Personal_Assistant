@@ -83,8 +83,8 @@ This step involves no sign-in and only read-only public data.
 - Produces: the CLI `node skills/gym-booking/book.js --list-classes --week YYYY-MM-DD --out DIR`, which writes `DIR/classes.json` = `classListRows(...)` for the Monday–Sunday starting at `--week` (defaulting to `targetWeek(new Date()).monday`). Also the internal `fetchWeek(monday, getJson) -> Cls[]`, which pages through `/api/customer/v1/classes?min_start_date&max_start_date&page_size=200&region=48541` following `next`. `getJson(url)` is injected so Task 4 can swap in a signed-in version.
 - Option parsing for all later modes: `--dry-run`, `--week`, `--no-wait`, `--out`, `--plan`, `--list-classes`. `--out` is required.
 
-- [ ] **Step 1: Run** `node skills/gym-booking/book.js --list-classes --week 2026-11-02 --out "$RUN"` (with `RUN` a scratch folder). Confirm `classes.json` has rows for all seven weekdays, includes `"6:10 AM · Top HIIT · The Well"` on Wed, and contains no "Meeting Room" entries.
-- [ ] **Step 2: Commit** `git add skills/gym-booking/book.js && git commit -m "Add public class list mode to booking script"`
+- [x] **Step 1: Run** `node skills/gym-booking/book.js --list-classes --week 2026-11-02 --out "$RUN"` (with `RUN` a scratch folder). Confirm `classes.json` has rows for all seven weekdays, includes `"6:10 AM · Top HIIT · The Well"` on Wed, and contains no "Meeting Room" entries.
+- [x] **Step 2: Commit** `git add skills/gym-booking/book.js && git commit -m "Add public class list mode to booking script"`
 
 ### Task 3: Build the preferences Sheet
 
@@ -99,7 +99,7 @@ This needs the user: they create a blank Google Sheet and paste its link. Use th
   - `My Plan`: B1 "Pause all bookings", C1 a tick box. Header on row 3: `Day | Book? | 1st choice | Spots | 2nd choice | Spots | 3rd choice | Spots`. Rows 4–10 are Mon–Sun, with tick boxes in B4:B10.
   - `Class List`: A1:G1 headers `Mon..Sun`, each column listing that weekday's labels (feeding the dropdowns). I1:N1 headers `Weekday | Label | Time | Class | Studio | Studio id`, then the long table.
   - `Booking List`: header `Day | Choice | On | Time | Class | Studio | Studio id | Spots` on row 1, then 21 formula rows. Each row reads from the matching `My Plan` cell. `On` = ticked AND choice not blank AND NOT pause. Time, Class, Studio and Studio id come from a `FILTER` on `Class List!I:N`, matching weekday AND label.
-  - Dropdowns: row *r*'s choice cells use `ONE_OF_RANGE` on that weekday's column in `Class List` (Mon row uses `='Class List'!A2:A80`, and so on).
+  - Dropdowns: row *r*'s choice cells use `ONE_OF_RANGE` on that weekday's column in `Class List` (Mon row uses `='Class List'!A2:A200`, and so on; a real week has up to 93 classes per day).
   - Warning-only protection on `Class List` and `Booking List`.
 
 - [ ] **Step 1:** Ask the user for the blank Sheet's link. Write all three tabs and the formatting in one `update_spreadsheet` batch, then the values and formulas.
