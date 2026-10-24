@@ -1,4 +1,4 @@
-# Onboard-skill requirements (DRAFT, awaiting approval)
+# Onboard-skill requirements (APPROVED by user)
 
 ## Purpose
 Turn a plain-language request ("add a skill that does X") into a fully tested skill in this plugin, plus every tool it needs to run.
