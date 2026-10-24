@@ -4,10 +4,10 @@
 Every week, automatically book the user's preferred classes (and spots) at Sweat and Tonic the moment booking opens, and email a summary.
 
 ## Facts
-- Gym: https://sweatandtonic.com/ (booking platform not yet confirmed; check during the dry run)
-- Timezone: Eastern (America/New_York)
-- Booking opens Saturdays at 5:00pm Eastern, for the week after the upcoming week.
-  Example: Saturday Oct 24 at 5pm opens Nov 1-7 (Sun-Sat).
+- Gym: https://sweatandtonic.com/ (booking platform: Mariana Tek; booking page https://sweatandtonic.com/pages/reserve)
+- Timezone: Eastern (America/Toronto; all studios are in Toronto)
+- Booking opens Saturdays at 5:00pm Eastern (Unlimited members), for the week after the upcoming week.
+  Weeks run Monday-Sunday. Example: Saturday Oct 24 at 5pm opens Nov 2-8 (Mon-Sun).
 - Login: email + password.
 - The booking page lets you choose a spot when booking.
 
@@ -18,12 +18,12 @@ Every week, automatically book the user's preferred classes (and spots) at Sweat
 - Cloud environment needs: the gym domains on the network allowlist; the gym email and password as environment secrets.
 
 ## Preferences
-- Stored in a Google Sheet or Doc the user can edit from a phone.
-- Each entry: day, class time, class name, preferred spot, plus fallbacks (alternate class/time/spot, in order).
+- Stored in a Google Sheet the user can edit from a phone (Google Sheets app).
+- Each entry: day, then up to three class choices picked from dropdowns, each with preferred spots in order. Backups are on the same day only. Layout: see the design spec.
 - The run reads the file each Saturday. Books every entry on the list.
 
 ## When something goes wrong
-- Class full or booking fails: try the next fallback for that entry.
+- Class full or booking fails: try the next fallback for that entry. Never join a waitlist (for now).
 - Always email a summary via Gmail: booked, fell back, or could not book.
 
 ## Testing (per onboarding rules)
@@ -32,13 +32,14 @@ Every week, automatically book the user's preferred classes (and spots) at Sweat
 3. Confirm the scheduled task fires on time.
 
 ## Decisions
-- Membership is unlimited, so booking costs nothing extra. Late-cancel fee applies if cancelled within 12 hours of class start: the skill must never cancel or double-book, and must warn if a booking would need cancelling inside that window.
+- Membership is unlimited, so booking costs nothing extra. Late-cancel fee ($19) applies if cancelled within 12 hours of class start, and a no-show costs $24: the skill must never cancel or double-book, and must warn if a booking would need cancelling inside that window.
 - Summary email goes to treichelc@gmail.com via Gmail.
-- Preferences live in a Google Sheet (one row per class, with fallback columns).
+- Preferences live in a Google Sheet with three tabs (My Plan, Class List, Booking List); see docs/superpowers/specs/2026-10-24-gym-booking-design.md.
+- Approach: instructions plus one small booking script that clicks the real page (approach B). Direct booking requests (approach C) may be considered after a few successful weeks.
+- Automation is a grey area under the website's terms; the user accepted it under care rules (behave like one careful person, stop on any verification check).
 - Spot selection details to be worked out together during the dry run.
 
 ## Open questions
-- Booking platform is Mariana Tek (https://sweatandtonic.marianatek.com, linked from the gym's website). Still to confirm: whether its login blocks automated logins (CAPTCHA/verification). Its domain (*.marianatek.com) must be on the cloud network allowlist.
-- Waitlist behaviour.
-- Google Sheets access from the cloud run (connector needed).
-- Add gym domains to the cloud network allowlist and gym login to environment secrets (user action).
+- Whether the sign-in from the cloud triggers any verification (checked in the dry run).
+- Whether Google's reCAPTCHA hosts must be on the network allowlist for booking to work (checked in the dry run).
+- Waitlist behaviour (out of scope for now).
