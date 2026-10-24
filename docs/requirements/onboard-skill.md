@@ -28,8 +28,11 @@ Turn a plain-language request ("add a skill that does X") into a fully tested sk
 - Explain in plain language, ask clarifying questions first, present options and recommend one.
 - One approval point (step 3), then build.
 
+## Decisions
+- Slash command: /new-skill (natural requests also work).
+- Superpowers is a dependency: the user installs it once; this plugin calls its skills rather than copying them.
+- "Fully tested" = dry run (everything except the final real action), then one live test the user explicitly approves.
+- Claude Doc copy is made after the user approves these requirements.
+
 ## Open questions
-- Slash command name.
-- Does the skill depend on Superpowers being installed, or should it bundle copies? (Recommended: depend on it.)
-- What counts as "fully tested" for skills that act on the real world (e.g. booking)?
-- How tools are provisioned in practice (what Claude can do itself vs what you must click).
+- How tools are provisioned in practice (what Claude can do itself vs what the user must click).
