@@ -102,10 +102,10 @@ This needs the user: they create a blank Google Sheet and paste its link. Use th
   - Dropdowns: row *r*'s choice cells use `ONE_OF_RANGE` on that weekday's column in `Class List` (Mon row uses `='Class List'!A2:A200`, and so on; a real week has up to 93 classes per day).
   - Warning-only protection on `Class List` and `Booking List`.
 
-- [ ] **Step 1:** Ask the user for the blank Sheet's link. Write all three tabs and the formatting in one `update_spreadsheet` batch, then the values and formulas.
-- [ ] **Step 2: Verify.** Read `Booking List!A1:H22` with `get_values`. Confirm 21 rows, all `On` FALSE. Then temporarily fill `My Plan` Wed with Book? ticked, 1st choice `6:10 AM · Top HIIT · The Well`, Spots `4-W`. Re-read and confirm `Wed | 1 | TRUE | 6:10 AM | Top HIIT | The Well | 48750 | 4-W`. Clear the test entry.
+- [x] **Step 1:** Ask the user for the blank Sheet's link. Write all three tabs and the formatting in one `update_spreadsheet` batch, then the values and formulas.
+- [x] **Step 2: Verify.** Read `Booking List!A1:H22` with `get_values`. Confirm 21 rows, all `On` FALSE. Then temporarily fill `My Plan` Wed with Book? ticked, 1st choice `6:10 AM · Top HIIT · The Well`, Spots `4-W`. Re-read and confirm `Wed | 1 | TRUE | 6:10 AM | Top HIIT | The Well | 48750 | 4-W`. Clear the test entry.
 - [ ] **Step 3:** Ask the user to open the Sheet in the Google Sheets app and fill in their real choices. Confirm the dropdowns and tick boxes work on their phone.
-- [ ] **Step 4: Commit** `git add skills/gym-booking/SKILL.md && git commit -m "Record preferences Sheet and its setup steps"`
+- [x] **Step 4: Commit** `git add skills/gym-booking/SKILL.md && git commit -m "Record preferences Sheet and its setup steps"`
 
 ### Task 4: Sign in and read the week as the user (read-only)
 
