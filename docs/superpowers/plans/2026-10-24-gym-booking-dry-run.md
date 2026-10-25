@@ -159,9 +159,9 @@ Steps the instructions must state, in order:
 
 ### Task 7: First dry run (spec testing step 1)
 
-- [ ] **Step 1:** With the user following along, run the skill end to end from the instructions alone, against an already-open week with the user's real Sheet (`--week` set to an open Monday, `--no-wait`, `--dry-run`).
-- [ ] **Step 2:** Check the spec's pass criteria. Sign-in worked, every ticked day was matched or explained, the screenshots are right, the not-yet-open week reads correctly, nothing was booked (check the account), and the email arrived. Send the screenshots to the user.
-- [ ] **Step 3:** Record the findings in `docs/requirements/gym-booking.md` "Open questions": whether a verification check appeared, and whether Google reCAPTCHA hosts needed allowlisting (look for failed `www.google.com` / `www.gstatic.com` requests during the run). Commit and push.
+- [x] **Step 1:** With the user following along, run the skill end to end from the instructions alone, against an already-open week with the user's real Sheet (`--week` set to an open Monday, `--no-wait`, `--dry-run`).
+- [x] **Step 2:** Check the spec's pass criteria. Sign-in worked, every ticked day was matched or explained, the screenshots are right, the not-yet-open week reads correctly, nothing was booked (check the account), and the email arrived. Send the screenshots to the user.
+- [x] **Step 3:** Record the findings in `docs/requirements/gym-booking.md` "Open questions": whether a verification check appeared, and whether Google reCAPTCHA hosts needed allowlisting (look for failed `www.google.com` / `www.gstatic.com` requests during the run). Commit and push.
 
 ---
 

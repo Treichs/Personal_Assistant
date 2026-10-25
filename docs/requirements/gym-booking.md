@@ -40,6 +40,13 @@ Every week, automatically book the user's preferred classes (and spots) at Sweat
 - Spot selection details to be worked out together during the dry run.
 
 ## Open questions
-- Whether the sign-in from the cloud triggers any verification (checked in the dry run).
-- Whether Google's reCAPTCHA hosts must be on the network allowlist for booking to work (checked in the dry run).
 - Waitlist behaviour (out of scope for now).
+- Membership: the confirm screen shows "The Well Unlimited (Upgrade from In-Studio Unlimited) (Exp. 11/2/2026)". User to confirm whether that date is a renewal date or a real end date.
+- Re-check at the live test (L2): whether the Complete Reservation click needs Google reCAPTCHA (`www.google.com`, `www.gstatic.com`) or Stripe (`js.stripe.com`, blocked today). The dry run never reaches that click.
+
+## Dry-run findings (2026-10-24/25)
+- Verification: no "verify you're human" check appeared in about 9 cloud sign-ins over two days.
+- reCAPTCHA hosts: no request to `www.google.com` or `www.gstatic.com` failed during any run, so they are not needed up to the confirm screen.
+- Blocked hosts that matter: `cdn.shopify.com` (the website's own scripts). Without it, picking a studio in the schedule widget sends the page back to the home page. Worked around by opening each class directly: `https://sweatandtonic.com/pages/reserve?_mt=/classes/<id>/reserve` goes straight to "Select Your Spot".
+- Spot labels: rides and yoga use plain numbers (`26`); HIIT uses number plus zone (`4-W`).
+- First full dry run (week of Nov 2, user's real Sheet plus a Wednesday test day): Mon and Tue correctly skipped (already booked / overlaps), Wed reached the confirm screen with the right class, spot and Unlimited membership. Nothing booked; summary email sent.
