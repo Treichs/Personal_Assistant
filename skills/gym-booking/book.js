@@ -70,14 +70,14 @@ function writeJson(dir, name, data) {
 
 // ---- Signed-in browser work ----
 
-const BLOCK_TEXT = /verify you('|’)?re (a )?human|are you a robot|unusual activity/i;
+const BLOCK_TEXT = /verify (that )?you(('|’)re| are) (a )?human|are you a robot|unusual activity/i;
 
 // Throws StopError if any frame shows a human-verification challenge. We never try to get past one.
 // (The invisible reCAPTCHA "anchor" frame is always there; only a visible challenge counts.)
 async function checkForBlock(page) {
   for (const f of page.frames()) {
     const u = f.url();
-    if (/recaptcha\/(api2|enterprise)\/bframe|hcaptcha\.com/.test(u)) {
+    if (/recaptcha\/(api2|enterprise)\/bframe|hcaptcha\.com|challenges\.cloudflare\.com/.test(u)) {
       const el = await f.frameElement().catch(() => null);
       if (el && await el.isVisible().catch(() => false)) throw new StopError('verification check');
     }
@@ -156,17 +156,18 @@ async function signedInGetJson(page) {
   return async (url) => {
     let res = null;
     if (via !== 'node') {
+      // The widget frame goes away once the walk opens another page; then read directly.
       res = await widget.evaluate(async ({ url, headers }) => {
         try {
           const r = await fetch(url, { headers });
           return { status: r.status, body: r.ok ? await r.json() : null };
         } catch (e) { return null; }
-      }, { url, headers });
+      }, { url, headers }).catch(() => null);
     }
     if (!res) {
       const r = await fetch(url, { headers });
       res = { status: r.status, body: r.ok ? await r.json() : null };
-      if (!via) { via = 'node'; console.log('signed-in reads: made directly with the widget\'s session'); }
+      if (via !== 'node') { via = 'node'; console.log('signed-in reads: now made directly with the widget\'s session'); }
     } else if (!via) { via = 'widget'; console.log('signed-in reads: made inside the booking widget'); }
     if (!res.body) throw new StopError(`signed-in data request failed: HTTP ${res.status}`);
     return res.body;
@@ -188,13 +189,12 @@ async function safeClick(locator) {
 }
 
 // Re-fetch one class. If it is still "Not Open" after its opening time, recheck every few seconds
-// for up to 2 minutes (care rules), then give up on it.
-async function freshClass(id, getJson, noWait) {
+// until `recheckUntil` (one shared 2-minute window per run, care rules), then give up on it.
+async function freshClass(id, getJson, noWait, recheckUntil) {
   let det = await getJson(`${DATA_HOST}/api/customer/v1/classes/${id}`);
   let cls = normalizeClass(det);
   if (cls.status === 'Not Open' && !noWait && msUntil(cls.bookingStart, new Date()) === 0) {
-    const end = Date.now() + OPEN_RECHECK_FOR_MS;
-    while (cls.status === 'Not Open' && Date.now() < end) {
+    while (cls.status === 'Not Open' && Date.now() < recheckUntil) {
       await sleep(OPEN_RECHECK_MS);
       det = await getJson(`${DATA_HOST}/api/customer/v1/classes/${id}`);
       cls = normalizeClass(det);
@@ -229,7 +229,7 @@ async function walkToConfirm(page, cls, spot, shotPath) {
   const problems = [];
   if (!text.toLowerCase().includes(cls.typeName.toLowerCase()) && !text.toLowerCase().includes(cls.name.toLowerCase())) problems.push('class name');
   if (!text.includes(cls.time)) problems.push('time');
-  if (spot && !new RegExp(`(^|\\D)${spot.replace(/[^\w]/g, '.?')}(\\D|$)`).test(text)) problems.push('spot');
+  if (spot && !new RegExp(`spot:?\\s*${spot.replace(/[^\w]/g, '.?')}(\\s|$)`, 'i').test(text)) problems.push('spot');
   // "Pay With" is a custom dropdown (role=combobox owning #paymentOption). Its chosen value is held in a
   // read-only input, not in the page text; the chosen option is also marked aria-selected.
   const payWith = await widget.evaluate(() => {
@@ -237,11 +237,7 @@ async function walkToConfirm(page, cls, spot, shotPath) {
     const picked = document.querySelector('#paymentOption [aria-selected=true]');
     return (shown && shown.value) || (picked && picked.textContent) || '';
   });
-  if (!/unlimited/i.test(payWith)) {
-    problems.push('Pay With is not Unlimited');
-    const html = await widget.evaluate(() => document.body.outerHTML.replace(/<path[^>]*>/g, ''));
-    fs.writeFileSync(shotPath.replace(/\.png$/, '-page.html'), html);
-  }
+  if (!/unlimited/i.test(payWith)) problems.push('Pay With is not Unlimited');
   await page.goto('about:blank');
   if (problems.length) return { ok: false, note: `confirm screen looks wrong: ${problems.join(', ')}` };
   return { ok: true, payWith: payWith.trim().slice(0, 80) };
@@ -249,6 +245,7 @@ async function walkToConfirm(page, cls, spot, shotPath) {
 
 async function bookDays(page, plan, week, weekClasses, getJson, opts, results) {
   const bookedThisRun = [];
+  let recheckUntil = Date.now() + OPEN_RECHECK_FOR_MS;
   if (!opts.noWait) {
     const opens = plan.days.flatMap((d) => d.choices.map((ch) => matchClass(ch, d.date, weekClasses).cls))
       .filter(Boolean).map((c) => c.bookingStart).sort((a, b) => Date.parse(a) - Date.parse(b));
@@ -256,16 +253,17 @@ async function bookDays(page, plan, week, weekClasses, getJson, opts, results) {
       console.log(`waiting ${Math.round(msUntil(opens[0], new Date()) / 1000)}s for booking to open`);
       await sleep(msUntil(opens[0], new Date()));
     }
+    recheckUntil = Date.now() + OPEN_RECHECK_FOR_MS;
   }
   for (const day of plan.days) {
     const entry = { day: day.day, date: day.date, outcome: 'could-not-book', choice: null, classId: null,
       typeName: null, time: null, studio: null, spot: null, notes: [], screenshot: null };
     results.days.push(entry);
     for (const ch of day.choices) {
-      const tag = `${ORDINAL[ch.choice] || ch.choice}: ${ch.typeName} ${ch.time}`;
+      const tag = `${ORDINAL[ch.choice] || ch.choice}: ${ch.typeName && ch.time ? `${ch.typeName} ${ch.time}` : '(choice not in Class List)'}`;
       const m = matchClass(ch, day.date, weekClasses);
       if (!m.cls) { entry.notes.push(`${tag} — ${m.reason}`); continue; }
-      const { cls, layoutSpots } = await freshClass(m.cls.id, getJson, opts.noWait);
+      const { cls, layoutSpots } = await freshClass(m.cls.id, getJson, opts.noWait, recheckUntil);
       const rule = ruleViolation(cls, { week, bookedThisRun, weekClasses });
       if (rule) { entry.notes.push(`${tag} — ${rule}`); continue; }
       if (cls.status) { entry.notes.push(`${tag} — ${cls.status}`); continue; }
@@ -289,14 +287,17 @@ async function bookDays(page, plan, week, weekClasses, getJson, opts, results) {
 }
 
 async function runDry(opts) {
-  const plan = JSON.parse(fs.readFileSync(opts.plan, 'utf8'));
+  let plan = { days: [] };
+  try { plan = JSON.parse(fs.readFileSync(opts.plan, 'utf8')); } catch (e) { plan.error = e.message; }
   const monday = opts.week || (plan.week && plan.week.monday) || targetWeek(new Date()).monday;
   const results = { mode: 'dry-run', week: { monday, sunday: addDays(monday, 6) },
     startedAt: new Date().toISOString(), finishedAt: null, stopped: null, days: [], blockedHosts: [] };
-  const { chromium } = require('playwright');
-  const browser = await chromium.launch();
   const blocked = new Set();
+  let browser = null;
   try {
+    if (plan.error) throw new StopError(`could not read the plan: ${plan.error}`);
+    const { chromium } = require('playwright');
+    browser = await chromium.launch();
     const page = await browser.newPage({ viewport: { width: 1280, height: 900 } });
     page.on('requestfailed', (r) => blocked.add(new URL(r.url()).host));
     await signIn(page);
@@ -315,7 +316,7 @@ async function runDry(opts) {
     results.blockedHosts = [...blocked].sort();
     results.finishedAt = new Date().toISOString();
     writeJson(opts.out, 'results.json', results);
-    await browser.close();
+    if (browser) await browser.close();
   }
   console.log(`results.json written; stopped: ${results.stopped}`);
 }

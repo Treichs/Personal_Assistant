@@ -37,6 +37,12 @@ test('targetWeek uses the Toronto date', () => {
     { monday: '2026-11-09', sunday: '2026-11-15' });
   assert.deepStrictEqual(targetWeek(new Date('2026-10-29T12:00:00Z')),
     { monday: '2026-11-09', sunday: '2026-11-15' });
+  // Daylight saving ends Sun Nov 1. Sat Nov 7 8:30pm EST is already Sunday in UTC.
+  assert.deepStrictEqual(targetWeek(new Date('2026-11-08T01:30:00Z')),
+    { monday: '2026-11-16', sunday: '2026-11-22' });
+  // Sun Nov 1, the changeover day itself, looks ahead to Sat Nov 7.
+  assert.deepStrictEqual(targetWeek(new Date('2026-11-01T06:30:00Z')),
+    { monday: '2026-11-16', sunday: '2026-11-22' });
 });
 
 test('formatTime', () => {
@@ -163,4 +169,5 @@ test('msUntil', () => {
   assert.strictEqual(msUntil('2026-10-31T17:00:00-04:00', new Date('2026-10-31T21:05:00Z')), 0);
   // After daylight saving ends (Nov 1), 5:00pm Toronto is 22:00 UTC.
   assert.strictEqual(msUntil('2026-11-07T17:00:00-05:00', new Date('2026-11-07T21:59:00Z')), 60000);
+  assert.strictEqual(msUntil(null, new Date()), 0);
 });

@@ -168,5 +168,5 @@ Steps the instructions must state, in order:
 ## Later tasks (separate plan after the dry run)
 
 - **L1. Scheduled dry run, Sat Oct 31.** Create a scheduled task (fresh session each run, Google Sheets plus Gmail connectors, 4:40pm Toronto) that follows SKILL.md in dry-run mode. Afterwards, review the timing and how fast classes filled.
-- **L2. Live booking.** Add the Complete Reservation click behind a `--live` flag. After clicking, confirm the booking through `is_user_reserved`. If the click errors, re-check before anything else (no double-booking). Then run one live test the user approves, on a weekday, at least 9 days out.
+- **L2. Live booking.** Add the Complete Reservation click behind a `--live` flag. Before that: a confirm screen that does not appear or looks wrong must stop the whole run and re-check bookings (spec care rules); the dry run only notes it and moves to the next choice. After clicking, confirm the booking through `is_user_reserved`. If the click errors, re-check before anything else (no double-booking). Then run one live test the user approves, on a weekday, at least 9 days out.
 - **L3. First live Saturday, Nov 7.** Switch the scheduled task to live. That run opens Nov 16–22.

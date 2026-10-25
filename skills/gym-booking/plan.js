@@ -139,8 +139,10 @@ function pickSpot(spots, layoutSpots) {
   return null;
 }
 
+// A missing or unreadable opening time counts as already open (0), never NaN.
 function msUntil(isoOpen, now) {
-  return Math.max(0, Date.parse(isoOpen) - now.getTime());
+  const open = Date.parse(isoOpen);
+  return Number.isNaN(open) ? 0 : Math.max(0, open - now.getTime());
 }
 
 module.exports = {

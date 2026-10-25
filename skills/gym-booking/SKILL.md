@@ -21,7 +21,9 @@ For a test run, the user may name a week (`--week`, a Monday) that is already op
 
 ## Steps
 
-Make a run folder outside the repo, for example `RUN=$(mktemp -d)`. Every file below goes there.
+Run every command from the repo root. Make a run folder outside the repo once, for example
+`mktemp -d`, and note its full path. Each shell command below starts with `export RUN=<that path> &&`,
+because separate commands don't share variables. Every file below goes in the run folder.
 Never write run files, screenshots, cookies or tokens into the repo.
 
 1. **Read the Sheet** with the Google Sheets connector (`get_values`):
@@ -32,13 +34,16 @@ Never write run files, screenshots, cookies or tokens into the repo.
 2. **Write the plan.** Save the Booking List values as `$RUN/rows.json` (the 2D array exactly as
    returned), then run:
    `node -e 'const p=require("./skills/gym-booking/plan"); const w=process.argv[2]?{monday:process.argv[2],sunday:p.addDays(process.argv[2],6)}:p.targetWeek(new Date()); require("fs").writeFileSync(process.env.RUN+"/plan.json", JSON.stringify(p.buildPlan(require(process.env.RUN+"/rows.json"), process.argv[1]==="TRUE", w), null, 1))' <pause value> [<Monday for a test week>]`
+   The first value after the script is the pause box: always pass it, as `TRUE` or `FALSE`
+   (an empty cell counts as `FALSE`). The second, optional value is a Monday, only for a test week.
    If paused, email "Paused this week. Nothing booked." (subject as in step 4) and stop.
    If the plan has no days, email "Nothing ticked this week. Nothing booked." and go to step 5.
 3. **Run the script:**
    `node skills/gym-booking/book.js --dry-run --plan "$RUN/plan.json" --out "$RUN"`
    - It signs in once with `GYM_EMAIL` / `GYM_PASSWORD`. Never print, log or screenshot these.
-   - On a Saturday run it waits until 5:00pm, then works through the days. Add `--no-wait` (and
-     `--week <Monday>`) only for a test against a week that is already open.
+   - The target week comes from `plan.json`, so don't pass `--week` here.
+   - On a Saturday run it waits until 5:00pm, then works through the days. Add `--no-wait` only for
+     a test against a week that is already open.
    - It stops on any "verify you're human" check. Never try to get past one.
    - It never clicks Complete Reservation, Cancel, Join Waitlist or anything that buys or pays.
 4. **Email the summary** with the Gmail connector (`send_message`) to treichelc@gmail.com.
